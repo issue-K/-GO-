@@ -12,6 +12,7 @@ type Context struct{
 	//请求参数
 	Path string
 	Method string
+	Params map[string]string  //利用trie动态路由解析出来的参数
 	//响应参数
 	StatusCode int
 }
@@ -23,11 +24,18 @@ func newContext(w http.ResponseWriter,req *http.Request) *Context{
 		Method: req.Method,
 	}
 }
+/*
+下面的方法是获取参数的方法
+ */
 func (c *Context) PostForm(key string) string{
 	return c.Req.FormValue(key)  //post请求获取参数
 }
 func (c *Context ) Query(key string) string{
 	return c.Req.URL.Query().Get(key) //get请求获取参数
+}
+func (c *Context) Param(key string) string{
+	value,_ := c.Params[key]
+	return value
 }
 func (c *Context) Status(code int){
 	c.StatusCode = code;
