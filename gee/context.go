@@ -15,6 +15,9 @@ type Context struct{
 	Params map[string]string  //利用trie动态路由解析出来的参数
 	//响应参数
 	StatusCode int
+	//中间件
+	handlers []HandlerFunc
+	index int //记录当前执行到第几个中间件
 }
 func newContext(w http.ResponseWriter,req *http.Request) *Context{
 	return &Context{
@@ -22,6 +25,15 @@ func newContext(w http.ResponseWriter,req *http.Request) *Context{
 		Req: req,
 		Path: req.URL.Path,
 		Method: req.Method,
+		index: -1,
+	}
+}
+
+func (c *Context) Next(){
+	c.index++
+	le := len( c.handlers )
+	for ; c.index<le ;c.index++{  //依次调用之后的函数
+		c.handlers[c.index](c)
 	}
 }
 /*
@@ -57,6 +69,11 @@ func (c *Context) JSON(code int,obj interface{}){
 	if err := encoder.Encode(obj); err!=nil{
 		http.Error(c.Writer,err.Error(),500 )
 	}
+}
+//当出现错误,想结束中间件的函数
+func (c *Context) Fail(code int, err string) {
+	c.index = len(c.handlers)
+	c.JSON(code, H{"message": err})
 }
 func (c *Context) Data(code int,data []byte){
 	c.Status(code)

@@ -3,6 +3,7 @@ package gee
 import (
 	"log"
 	"net/http"
+	"strings"
 )
 
 
@@ -31,6 +32,10 @@ func New() *Engine{
 	engine.RouterGroup = &RouterGroup{ engine:engine }
 	engine.groups = []*RouterGroup{ engine.RouterGroup }
 	return engine
+}
+//向group中加入中间件函数
+func (group *RouterGroup) Use(middlewares ...HandlerFunc){
+	group.middlewares = append( group.middlewares,middlewares... )
 }
 /*Group
 根据父亲的信息构造一个新的 RouterGroup
@@ -62,6 +67,14 @@ func (engine *Engine ) Run(addr string) (err error){
 	return http.ListenAndServe( addr,engine )
 }
 func (engine *Engine ) ServeHTTP(w http.ResponseWriter,req *http.Request){
+	var middlewares []HandlerFunc
+	for _,group := range engine.groups{  //简单的判断:遍历所有组,是这个组的话就把那个组的中间件加进来
+		if strings.HasPrefix( req.URL.Path,group.prefix ){
+			middlewares = append( middlewares,group.middlewares... )
+		}
+	}
+
 	c := newContext(w,req)
+	c.handlers = middlewares
 	engine.router.handle(c)
 }

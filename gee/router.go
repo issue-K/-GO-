@@ -73,6 +73,9 @@ func (r *router)handle(c *Context){
 		key := c.Method + "-" +n.pattern
 		r.handlers[key](c)
 	}else{
-		c.String( http.StatusNotFound,"404 NOT FOUND: %s\n",c.Path )
+		c.handlers = append(c.handlers,func(c *Context){ //报错信息加入中间件,最后输出
+			c.String( http.StatusNotFound,"404 NOT FOUND: %s\n",c.Path )
+		})
 	}
+	c.Next()  //开始处理中间件函数
 }
